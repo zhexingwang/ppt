@@ -9,7 +9,7 @@ from pptx.enum.shapes import MSO_CONNECTOR, MSO_SHAPE
 from pptx.enum.text import MSO_ANCHOR, PP_ALIGN
 from pptx.util import Inches, Pt
 
-from .shapes import add_circle, add_rect, add_text_box, set_fill, slide_background
+from .shapes import add_circle, add_rect, add_text_box, slide_background
 from .theme import Theme
 
 
@@ -19,6 +19,14 @@ YELLOW = RGBColor(0xF2, 0xC9, 0x4C)
 LIGHT_BG = RGBColor(0xEE, 0xF3, 0xF8)
 CARD = RGBColor(0xFF, 0xFF, 0xFF)
 MUTED = RGBColor(0x5A, 0x6A, 0x7A)
+
+ICON_DIR = Path(__file__).resolve().parent.parent / "assets" / "icons"
+DEFAULT_ICONS = [
+    ICON_DIR / "icon_xian_circle.png",
+    ICON_DIR / "icon_japan_circle.png",
+    ICON_DIR / "icon_lab_circle.png",
+    ICON_DIR / "icon_yokogawa_circle.png",
+]
 
 
 def _card_with_yellow_bar(slide, left, top, width, height, title: str, subtitle: str):
@@ -50,20 +58,21 @@ def _card_with_yellow_bar(slide, left, top, width, height, title: str, subtitle:
     )
 
 
-def add_self_intro_slide(prs):
-    """王者興さんの自己紹介1枚スライド（図形編集可能）。"""
+def add_self_intro_slide(prs, icon_paths: list[Path] | None = None):
+    """王者興さんの自己紹介1枚スライド（図形+イラスト、テキスト編集可能）。"""
     layout = prs.slide_layouts[6]
     slide = prs.slides.add_slide(layout)
     slide_background(slide, LIGHT_BG)
+    icons = list(icon_paths) if icon_paths else list(DEFAULT_ICONS)
 
     # 上部タイトル帯
-    add_rect(slide, 0, 0, Theme.SLIDE_WIDTH, Inches(0.62), NAVY)
+    add_rect(slide, 0, 0, Theme.SLIDE_WIDTH, Inches(0.58), NAVY)
     add_text_box(
         slide,
         Inches(0.45),
-        Inches(0.08),
+        Inches(0.06),
         Inches(4),
-        Inches(0.48),
+        Inches(0.45),
         "自己紹介",
         size=Pt(22),
         color=Theme.WHITE,
@@ -72,13 +81,13 @@ def add_self_intro_slide(prs):
     )
 
     # 氏名カード
-    add_rect(slide, Inches(0.45), Inches(0.85), Inches(5.4), Inches(1.05), CARD, corner=True)
+    add_rect(slide, Inches(0.45), Inches(0.75), Inches(5.4), Inches(0.95), CARD, corner=True)
     border = slide.shapes.add_shape(
         MSO_SHAPE.ROUNDED_RECTANGLE,
         Inches(0.45),
-        Inches(0.85),
+        Inches(0.75),
         Inches(5.4),
-        Inches(1.05),
+        Inches(0.95),
     )
     border.fill.background()
     border.line.color.rgb = NAVY
@@ -91,11 +100,11 @@ def add_self_intro_slide(prs):
     add_text_box(
         slide,
         Inches(0.7),
-        Inches(0.95),
+        Inches(0.82),
         Inches(5.0),
-        Inches(0.45),
+        Inches(0.42),
         "王 者興",
-        size=Pt(28),
+        size=Pt(26),
         color=NAVY,
         bold=True,
         anchor=MSO_ANCHOR.MIDDLE,
@@ -103,9 +112,9 @@ def add_self_intro_slide(prs):
     add_text_box(
         slide,
         Inches(0.7),
-        Inches(1.4),
+        Inches(1.25),
         Inches(5.0),
-        Inches(0.35),
+        Inches(0.32),
         "材料科学 × 化学工学 × プロセスシステム工学",
         size=Pt(12),
         color=MUTED,
@@ -116,9 +125,9 @@ def add_self_intro_slide(prs):
     add_text_box(
         slide,
         Inches(6.2),
-        Inches(1.0),
+        Inches(0.9),
         Inches(6.6),
-        Inches(0.7),
+        Inches(0.6),
         "キャリアの歩み ─ 西安から日本、研究、そして協業へ",
         size=Pt(14),
         color=NAVY,
@@ -152,45 +161,83 @@ def add_self_intro_slide(prs):
     ]
 
     n = 4
-    circle_size = Inches(0.9)
+    icon_size = Inches(1.35)
     card_w = Inches(2.95)
-    card_h = Inches(1.3)
-    # カードがはみ出さないよう、カード列で均等配置し円をその中心に置く
+    card_h = Inches(1.2)
     gap = Inches(0.18)
     total_cards = card_w * n + gap * (n - 1)
     start_x = (Theme.SLIDE_WIDTH - total_cards) / 2
-    circle_top = Inches(2.35)
-    card_top = Inches(3.5)
+    icon_top = Inches(1.95)
+    card_top = Inches(3.55)
 
     first_center = start_x + card_w / 2
     last_center = start_x + (card_w + gap) * (n - 1) + card_w / 2
     line = slide.shapes.add_connector(
         MSO_CONNECTOR.STRAIGHT,
         first_center,
-        circle_top + circle_size / 2,
+        icon_top + icon_size / 2,
         last_center,
-        circle_top + circle_size / 2,
+        icon_top + icon_size / 2,
     )
     line.line.color.rgb = YELLOW
-    line.line.width = Pt(2.25)
+    line.line.width = Pt(2.5)
+
+    # アイコン間の小さな矢印
+    for i in range(n - 1):
+        ax = start_x + (card_w + gap) * i + card_w + gap / 2 - Inches(0.12)
+        arrow = slide.shapes.add_shape(
+            MSO_SHAPE.RIGHT_ARROW,
+            ax,
+            icon_top + icon_size / 2 - Inches(0.1),
+            Inches(0.24),
+            Inches(0.2),
+        )
+        arrow.fill.solid()
+        arrow.fill.fore_color.rgb = YELLOW
+        arrow.line.fill.background()
 
     for i, m in enumerate(milestones):
         card_x = start_x + (card_w + gap) * i
-        cx = card_x + card_w / 2 - circle_size / 2
-        add_circle(slide, cx, circle_top, circle_size, NAVY)
+        ix = card_x + card_w / 2 - icon_size / 2
+
+        # 影代わりの薄い円
+        add_circle(
+            slide,
+            ix + Inches(0.04),
+            icon_top + Inches(0.04),
+            icon_size,
+            RGBColor(0xD0, 0xD8, 0xE0),
+        )
+
+        icon_path = icons[i] if i < len(icons) else None
+        if icon_path and Path(icon_path).exists():
+            slide.shapes.add_picture(
+                str(icon_path),
+                ix,
+                icon_top,
+                width=icon_size,
+                height=icon_size,
+            )
+        else:
+            add_circle(slide, ix, icon_top, icon_size, NAVY)
+
+        # 番号バッジ（左上）
+        badge = Inches(0.32)
+        add_circle(slide, ix - Inches(0.02), icon_top - Inches(0.02), badge, YELLOW)
         add_text_box(
             slide,
-            cx,
-            circle_top + Inches(0.2),
-            circle_size,
-            Inches(0.5),
+            ix - Inches(0.02),
+            icon_top - Inches(0.02),
+            badge,
+            badge,
             m["num"],
-            size=Pt(18),
-            color=Theme.WHITE,
+            size=Pt(10),
+            color=NAVY,
             bold=True,
             align=PP_ALIGN.CENTER,
             anchor=MSO_ANCHOR.MIDDLE,
         )
+
         _card_with_yellow_bar(
             slide,
             card_x,
