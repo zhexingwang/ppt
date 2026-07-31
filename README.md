@@ -21,6 +21,22 @@
 python3 -m pip install -r requirements.txt
 ```
 
+## 自己紹介スライド（王者興）
+
+参考インフォグラフィックのテイストを踏まえ、経歴を1枚にまとめたデッキです。
+
+```bash
+python3 generate_self_intro.py
+# => output/self_intro.pptx
+```
+
+含まれるスライド:
+
+1. **画像版** … イラスト付きインフォグラフィック（発表用おすすめ）
+2. **編集可能版** … PowerPoint上で文字・図形を直接編集できる版
+
+画像素材: `assets/self_intro_infographic.png`
+
 ## 使い方
 
 ### サンプルを生成
