@@ -6,3 +6,4 @@ venv/
 .DS_Store
 output/*.pdf
 output/output/
+output/*_raw.pptx
