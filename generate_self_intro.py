@@ -5,6 +5,8 @@ from __future__ import annotations
 
 import argparse
 import shutil
+import subprocess
+import tempfile
 from pathlib import Path
 
 from pptx import Presentation
@@ -14,6 +16,7 @@ from infographic.theme import Theme
 
 
 DEFAULT_IMAGE_CANDIDATES = [
+    Path("assets/self_intro_infographic_ppt.png"),
     Path("assets/self_intro_infographic.png"),
     Path("/opt/cursor/artifacts/assets/self_intro_infographic.png"),
 ]
@@ -26,6 +29,29 @@ def resolve_image(explicit: Path | None) -> Path | None:
         if candidate.exists():
             return candidate
     return None
+
+
+def resave_with_libreoffice(pptx_path: Path) -> bool:
+    """LibreOffice 経由で再保存し、PowerPoint 互換性を高める。"""
+    if not shutil.which("soffice"):
+        return False
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp_dir = Path(tmp)
+        cmd = [
+            "soffice",
+            "--headless",
+            "--convert-to",
+            "pptx:Impress MS PowerPoint 2007 XML",
+            "--outdir",
+            str(tmp_dir),
+            str(pptx_path),
+        ]
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        converted = tmp_dir / pptx_path.name
+        if result.returncode == 0 and converted.exists():
+            shutil.copy2(converted, pptx_path)
+            return True
+    return False
 
 
 def main():
@@ -48,6 +74,16 @@ def main():
         action="store_true",
         help="編集可能版のみ生成（画像スライドを含めない）",
     )
+    parser.add_argument(
+        "--image-only",
+        action="store_true",
+        help="画像版のみ生成（編集可能スライドを含めない）",
+    )
+    parser.add_argument(
+        "--no-resave",
+        action="store_true",
+        help="LibreOffice 再保存を行わない",
+    )
     args = parser.parse_args()
 
     prs = Presentation()
@@ -56,23 +92,29 @@ def main():
 
     image_path = None if args.editable_only else resolve_image(args.image)
     if image_path:
-        # リポジトリ内へコピーして再現性を確保
-        assets_dir = Path("assets")
-        assets_dir.mkdir(parents=True, exist_ok=True)
-        local_image = assets_dir / "self_intro_infographic.png"
-        if image_path.resolve() != local_image.resolve():
-            shutil.copy2(image_path, local_image)
-        add_self_intro_image_slide(prs, local_image)
+        add_self_intro_image_slide(prs, image_path)
 
-    add_self_intro_slide(prs)
+    if not args.image_only:
+        add_self_intro_slide(prs)
+
+    if len(prs.slides) == 0:
+        raise SystemExit("生成するスライドがありません")
 
     args.output.parent.mkdir(parents=True, exist_ok=True)
     prs.save(args.output)
+
+    if not args.no_resave:
+        if resave_with_libreoffice(args.output):
+            print("Resaved with LibreOffice for PowerPoint compatibility")
+        else:
+            print("LibreOffice resave skipped/unavailable")
+
     print(f"Generated: {args.output.resolve()}")
     print(f"Slides: {len(prs.slides)}")
     if image_path:
         print(f"Image slide: {image_path}")
-    print("Editable slide: included")
+    if not args.image_only:
+        print("Editable slide: included")
 
 
 if __name__ == "__main__":

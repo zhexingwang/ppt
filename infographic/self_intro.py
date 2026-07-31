@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from pptx.dml.color import RGBColor
-from pptx.enum.shapes import MSO_CONNECTOR, MSO_SHAPE
+from pptx.enum.shapes import MSO_SHAPE
 from pptx.enum.text import MSO_ANCHOR, PP_ALIGN
 from pptx.util import Inches, Pt
 
@@ -21,11 +21,12 @@ CARD = RGBColor(0xFF, 0xFF, 0xFF)
 MUTED = RGBColor(0x5A, 0x6A, 0x7A)
 
 ICON_DIR = Path(__file__).resolve().parent.parent / "assets" / "icons"
+# PowerPoint互換のため、透明度なしRGB PNGを優先
 DEFAULT_ICONS = [
-    ICON_DIR / "icon_xian_circle.png",
-    ICON_DIR / "icon_japan_circle.png",
-    ICON_DIR / "icon_lab_circle.png",
-    ICON_DIR / "icon_yokogawa_circle.png",
+    ICON_DIR / "icon_xian_ppt.png",
+    ICON_DIR / "icon_japan_ppt.png",
+    ICON_DIR / "icon_lab_ppt.png",
+    ICON_DIR / "icon_yokogawa_ppt.png",
 ]
 
 
@@ -172,15 +173,16 @@ def add_self_intro_slide(prs, icon_paths: list[Path] | None = None):
 
     first_center = start_x + card_w / 2
     last_center = start_x + (card_w + gap) * (n - 1) + card_w / 2
-    line = slide.shapes.add_connector(
-        MSO_CONNECTOR.STRAIGHT,
+    # コネクタ図形は環境によって修復ダイアログの原因になるため、矩形で代替
+    line_h = Inches(0.045)
+    add_rect(
+        slide,
         first_center,
-        icon_top + icon_size / 2,
-        last_center,
-        icon_top + icon_size / 2,
+        icon_top + icon_size / 2 - line_h / 2,
+        last_center - first_center,
+        line_h,
+        YELLOW,
     )
-    line.line.color.rgb = YELLOW
-    line.line.width = Pt(2.5)
 
     # アイコン間の小さな矢印
     for i in range(n - 1):

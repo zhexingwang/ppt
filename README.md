@@ -35,10 +35,15 @@ python3 generate_self_intro.py
 1. **画像版** … イラスト付きインフォグラフィック（発表用おすすめ）
 2. **編集可能版** … イラスト付き＋テキスト/図形を PowerPoint 上で直接編集できる版
 
+開けない場合の代替ファイル:
+
+- `output/self_intro_image_only.pptx` … 画像版のみ（互換性重視）
+- `output/self_intro_editable_only.pptx` … 編集可能版のみ
+
 素材:
 
-- 全体画像: `assets/self_intro_infographic.png`
-- マイルストーン用アイコン: `assets/icons/icon_*_circle.png`
+- 全体画像: `assets/self_intro_infographic.png` / `*_ppt.png`
+- マイルストーン用アイコン: `assets/icons/icon_*_ppt.png`（透明度なし・PowerPoint向け）
 
 ## 使い方
 
