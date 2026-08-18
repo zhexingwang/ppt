@@ -4,7 +4,7 @@ PPT向けインフォグラフィック生成エントリポイント。
 
 使い方:
   python generate_infographic.py
-  python generate_infographic.py -o output/my_deck.pptx
+  python generate_infographic.py -o decks/01_業務改善インフォグラフィック/my_deck.pptx
 """
 
 from __future__ import annotations
@@ -233,7 +233,7 @@ def main():
         "-o",
         "--output",
         type=Path,
-        default=Path("output/sample_infographic.pptx"),
+        default=Path("decks/01_業務改善インフォグラフィック/sample_infographic.pptx"),
         help="出力先 pptx パス",
     )
     parser.add_argument(

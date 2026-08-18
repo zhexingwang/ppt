@@ -1,103 +1,31 @@
-# PPT向けインフォグラフィック生成
+# ppt
 
-ワイド画面（16:9）の PowerPoint 用インフォグラフィックを、Python から自動生成するリポジトリです。
+作成した PowerPoint と関連原稿を、**目的ごとのフォルダ**で管理するリポジトリです。
 
-サンプルデッキ（業務改善プロジェクト）には、次の 8 スライドが含まれます。
+一覧と概要は [`decks/README.md`](decks/README.md) を見てください。各フォルダの `README.md` に、目的・対象・構成・ファイルをまとめています。
 
-| # | レイアウト | 用途 |
-|---|---|---|
-| 1 | Title | 表紙 |
-| 2 | KPI Cards | 数値ハイライト |
-| 3 | Process Flow | 手順・プロセス |
-| 4 | Before / After | 比較 |
-| 5 | Timeline | ロードマップ |
-| 6 | Pillars | 3本柱・重点領域 |
-| 7 | 2x2 Matrix | 優先度マトリクス |
-| 8 | Takeaways | まとめ |
+| フォルダ | 目的 |
+|---|---|
+| [decks/01_業務改善インフォグラフィック](decks/01_業務改善インフォグラフィック/) | 業務改善の汎用インフォグラフィック |
+| [decks/02_自己紹介](decks/02_自己紹介/) | 王者興の自己紹介（1枚） |
+| [decks/03_競合吸着モデル_20260803](decks/03_競合吸着モデル_20260803/) | 2026/08/03 廣森先生・北川先生向け発表原稿 |
 
-## セットアップ
+新しい資料は `decks/_template/` をコピーし、`decks/NN_短い名前/` を作って README を書いてください。
+
+## 生成ツール（任意）
+
+ワイド画面（16:9）のインフォグラフィックを Python から作れます。
 
 ```bash
 python3 -m pip install -r requirements.txt
+python3 generate_infographic.py          # → decks/01_…/sample_infographic.pptx
+python3 generate_self_intro.py           # → decks/02_…/self_intro.pptx
 ```
 
-## 自己紹介スライド（王者興）
-
-参考インフォグラフィックのテイストを踏まえ、経歴を1枚にまとめたデッキです。
+JSON から生成する場合:
 
 ```bash
-python3 generate_self_intro.py
-# => output/self_intro.pptx
+python3 generate_infographic.py -c content/sample.json -o decks/01_業務改善インフォグラフィック/custom.pptx
 ```
 
-含まれるスライド:
-
-1. **画像版** … イラスト付きインフォグラフィック（発表用おすすめ）
-2. **編集可能版** … イラスト付き＋テキスト/図形を PowerPoint 上で直接編集できる版
-
-開けない場合の代替ファイル:
-
-- `output/self_intro_image_only.pptx` … 画像版のみ（互換性重視）
-- `output/self_intro_editable_only.pptx` … 編集可能版のみ
-
-素材:
-
-- 全体画像: `assets/self_intro_infographic.png` / `*_ppt.png`
-- マイルストーン用アイコン: `assets/icons/icon_*_ppt.png`（透明度なし・PowerPoint向け）
-
-## 使い方
-
-### サンプルを生成
-
-```bash
-python3 generate_infographic.py
-# => output/sample_infographic.pptx
-```
-
-### 出力先を指定
-
-```bash
-python3 generate_infographic.py -o output/my_deck.pptx
-```
-
-### JSON から生成
-
-`content/sample.json` をコピーして編集し、次のように実行します。
-
-```bash
-python3 generate_infographic.py -c content/sample.json -o output/custom.pptx
-```
-
-対応する `type` は次のとおりです。
-
-- `title`
-- `kpi`
-- `process`
-- `comparison`
-- `timeline`
-- `pillars`
-- `matrix`
-- `takeaways`
-
-## カスタマイズのポイント
-
-1. **文言だけ変えたい**  
-   `generate_infographic.py` の `build_sample_deck()` か、JSON を編集してください。
-
-2. **色・フォントを変えたい**  
-   `infographic/theme.py` の `Theme` を変更します。  
-   Windows 向けには `FONT_JP = "Yu Gothic"` または `"Meiryo"` がおすすめです。
-
-3. **新しいレイアウトを追加したい**  
-   `infographic/slides.py` に関数を追加し、必要なら `content_loader.py` の `BUILDERS` にも登録します。
-
-## 出力物
-
-- `output/sample_infographic.pptx` … 完成スライド
-- `output/previews/` … プレビュー用 PNG（任意）
-
-## 補足
-
-- スライドサイズは **13.333 × 7.5 inch（16:9）** です。
-- 生成された `.pptx` はそのまま PowerPoint / Google スライドで編集できます。
-- 実際の社内資料向けには、サンプル文言を差し替えてご利用ください。
+色・フォントは `infographic/theme.py`、自己紹介素材は `assets/` です。

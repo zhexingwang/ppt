@@ -60,7 +60,7 @@ def main():
         "-o",
         "--output",
         type=Path,
-        default=Path("output/self_intro.pptx"),
+        default=Path("decks/02_自己紹介/self_intro.pptx"),
         help="出力 pptx パス",
     )
     parser.add_argument(
