@@ -153,17 +153,41 @@ def add_guardrail_slide(prs):
 
 def add_tools_slide(prs):
     slide = blank_slide(prs)
-    header_bar(slide, "使う道具は2つ", "文章づくりと、近い先行特許を探すこと")
-    tools = [
-        (NAVY, "M365 Copilot", "文章の下書き・整理・用語そろえ\n自然な言葉で依頼する"),
-        (Theme.ACCENT, "PatentSQUARE", "近い先行特許を探す（社内標準）\nクレームを書く前に使う"),
-    ]
-    for i, (c, t, b) in enumerate(tools):
-        x = Inches(0.55) + Inches(6.3) * i
-        add_rect(slide, x, Inches(1.55), Inches(6.05), Inches(4.6), Theme.CARD, corner=True)
-        add_rect(slide, x, Inches(1.55), Inches(6.05), Inches(0.85), c)
-        add_text_box(slide, x, Inches(1.7), Inches(6.05), Inches(0.55), t, size=Pt(22), color=Theme.WHITE, bold=True, align=PP_ALIGN.CENTER)
-        add_text_box(slide, x + Inches(0.4), Inches(2.8), Inches(5.25), Inches(2.8), b, size=Pt(18), color=Theme.TEXT)
+    header_bar(slide, "使う道具", "まずはCopilot。先行特許の調査も、最初はここでよい")
+
+    add_rect(slide, Inches(0.5), Inches(1.45), Inches(8.05), Inches(5.35), Theme.CARD, corner=True)
+    add_rect(slide, Inches(0.5), Inches(1.45), Inches(8.05), Inches(0.85), NAVY)
+    add_text_box(
+        slide, Inches(0.5), Inches(1.58), Inches(8.05), Inches(0.58),
+        "まずはこれ　M365 Copilot", size=Pt(22), color=Theme.WHITE, bold=True, align=PP_ALIGN.CENTER,
+    )
+    add_text_box(
+        slide, Inches(0.85), Inches(2.55), Inches(7.35), Inches(3.85),
+        "・文章の下書き・整理・用語そろえ\n"
+        "・近い先行特許の見当をつける（キーワード、似ている点／違う点）\n"
+        "・自然な言葉で依頼する\n\n"
+        "クレームを書く前に、近い先行特許を見る。\n"
+        "その調査も、最初はCopilotでよい。",
+        size=Pt(16), color=Theme.TEXT,
+    )
+
+    add_rect(slide, Inches(8.75), Inches(1.45), Inches(4.05), Inches(5.35), Theme.CARD, corner=True)
+    add_rect(slide, Inches(8.75), Inches(1.45), Inches(4.05), Inches(0.85), Theme.PRIMARY_LIGHT)
+    add_text_box(
+        slide, Inches(8.75), Inches(1.52), Inches(4.05), Inches(0.32),
+        "社内ツール　上級者向け", size=Pt(12), color=Theme.WHITE, bold=True, align=PP_ALIGN.CENTER,
+    )
+    add_text_box(
+        slide, Inches(8.75), Inches(1.82), Inches(4.05), Inches(0.40),
+        "PatentSQUARE", size=Pt(18), color=Theme.WHITE, bold=True, align=PP_ALIGN.CENTER,
+    )
+    add_text_box(
+        slide, Inches(9.0), Inches(2.55), Inches(3.55), Inches(3.85),
+        "特許を本格的に探す、社内の仕組みです。\n\n"
+        "最初は使わなくてよい。\n\n"
+        "慣れてきたら使うと、調査がより確かになる。",
+        size=Pt(15), color=Theme.TEXT,
+    )
     _footer(slide, "4")
     return slide
 
@@ -351,13 +375,13 @@ def build_deck():
         goal="近い特許がリストになり、被りそうな点が見えている",
         check="類似文献が数件あり、「似ている点／違う点」を一言で言える",
         do_items=[
-            "PatentSQUAREで類似を探す",
-            "ヒットの要約をAIに渡す",
+            "Copilotで近い先行特許を聞く",
+            "似ている点／違う点を整理する",
             "この段階ではクレームを書かない",
         ],
         question="本発明に近い先行特許を探すキーワードと、調査で見る観点を出してください。権利範囲（クレーム）はまだ作らないでください。ヒットした『自動生成』だけで本発明と同じと思わないようにしてください。",
         answer=(
-            "了解です。クレームは書きません。先に『何が近いか』を見るための検索語と、読むときの観点だけ出します。PatentSQUARE（社内標準）で試し、ヒットの要約をまた貼ってください。\n"
+            "了解です。クレームは書きません。先に『何が近いか』を見るための検索語と、読むときの観点だけ出します。まずはCopilotにこのまま聞いて、近い特許の見当をつけてください。社内にはPatentSQUAREという本格的な特許検索もあります。上級者向けなので、最初は使わなくてよいです。慣れたらそこで確認すると、調査がより確かになります。\n"
             "■ 検索の核　安全計装、SIS、SIF、HAZOP、C&E、cause and effect、FBD、インターロック、トリップロジック、ロジック自動生成、SIL検証、トレーサビリティ。英語も併用：safety instrumented system, automatic generation, cause and effect matrix。\n"
             "■ 組み合わせ例　「HAZOP 自動 AND SIF」「cause and effect 自動生成 安全計装」「SIL verification 自動 ロジック」。広すぎたら『検証』『追跡』『HAZOP』を必須語にして絞る。\n"
             "■ 読む観点（ここが本命）　①ロジックをどこまで自動で作るか（ルールだけか、知識ベースか）　②SIL検証とつながるか　③HAZOP項目と成果物の対応が残るか　④人がどこを確認するか　⑤対象がSISか、DCSの一般ロジックか。\n"
