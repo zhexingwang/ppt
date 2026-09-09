@@ -7,7 +7,7 @@ from pptx.dml.color import RGBColor
 from pptx.enum.text import MSO_ANCHOR, PP_ALIGN
 from pptx.util import Inches, Pt
 
-from .shapes import add_circle, add_rect, add_text_box, header_bar, set_paragraph_text, slide_background
+from .shapes import add_circle, add_rect, add_right_arrow, add_text_box, header_bar, set_paragraph_text
 from .slides import add_title_slide, blank_slide
 from .theme import Theme
 
@@ -19,29 +19,17 @@ GOLD = RGBColor(0xC9, 0xA2, 0x27)
 RED = RGBColor(0xC0, 0x39, 0x2B)
 CREAM = RGBColor(0xFD, 0xF6, 0xE3)
 GOAL_BG = RGBColor(0xE8, 0xF1, 0xFA)
+PS_REF = "https://www.panasonic.com/jp/business/its/patentsquare.html"
 
 
 def _footer(slide, page: str):
     add_text_box(
-        slide,
-        Inches(0.45),
-        Inches(7.18),
-        Inches(8.5),
-        Inches(0.26),
-        "Confidential(Yokogawa)",
-        size=Pt(10),
-        color=Theme.TEXT_MUTED,
+        slide, Inches(0.45), Inches(7.18), Inches(8.5), Inches(0.26),
+        "Confidential(Yokogawa)", size=Pt(10), color=Theme.TEXT_MUTED,
     )
     add_text_box(
-        slide,
-        Inches(11.6),
-        Inches(7.18),
-        Inches(1.2),
-        Inches(0.26),
-        page,
-        size=Pt(10),
-        color=Theme.TEXT_MUTED,
-        align=PP_ALIGN.RIGHT,
+        slide, Inches(11.6), Inches(7.18), Inches(1.2), Inches(0.26),
+        page, size=Pt(10), color=Theme.TEXT_MUTED, align=PP_ALIGN.RIGHT,
     )
 
 
@@ -53,8 +41,7 @@ def _paras(slide, left, top, width, height, text: str, *, size=Pt(11), color=The
         tf.vertical_anchor = MSO_ANCHOR.TOP
     except Exception:
         pass
-    lines = text.split("\n")
-    for i, line in enumerate(lines):
+    for i, line in enumerate(text.split("\n")):
         p = tf.paragraphs[0] if i == 0 else tf.add_paragraph()
         set_paragraph_text(p, line, size=size, color=color, bold=bold)
         p.space_after = space_after
@@ -76,11 +63,10 @@ def _qa(slide, left, top, width, height, question: str, answer: str):
         slide, left + Inches(0.25), top + Inches(0.30), width - Inches(0.4), Inches(0.62),
         question, size=Pt(11), color=Theme.TEXT, space_after=Pt(0),
     )
-    q_bottom = Inches(0.96)
-    add_rect(slide, left + Inches(0.2), top + q_bottom, width - Inches(0.4), Inches(0.015), Theme.DIVIDER)
+    add_rect(slide, left + Inches(0.2), top + Inches(0.96), width - Inches(0.4), Inches(0.015), Theme.DIVIDER)
     add_text_box(
         slide, left + Inches(0.25), top + Inches(1.02), width - Inches(0.4), Inches(0.24),
-        "回答例（Grok）　※Copilotでも同じ聞き方でよい。出力はそのまま貼らず、自分で直す。",
+        "回答例（① 60点の素案）　※3枚目の①。人と直す前。Copilotでも同じ聞き方でよい。",
         size=Pt(11), color=ANS, bold=True,
     )
     _paras(
@@ -90,7 +76,6 @@ def _qa(slide, left, top, width, height, question: str, answer: str):
 
 
 def _progress(slide, current: int):
-    """0〜5の現在地。初心者が「今どのStepか」を見失わないようにする。"""
     labels = ["0", "1", "2", "3", "4", "5"]
     x0 = Inches(9.15)
     y = Inches(0.32)
@@ -106,13 +91,31 @@ def _progress(slide, current: int):
         )
 
 
-def add_purpose_slide(prs):
+def _flow_row(slide, items, top, *, left=None, box_w=None, box_h=None, gap=None):
+    left = Inches(0.5) if left is None else left
+    box_w = Inches(2.15) if box_w is None else box_w
+    box_h = Inches(0.72) if box_h is None else box_h
+    gap = Inches(0.42) if gap is None else gap
+    for i, t in enumerate(items):
+        x = left + (box_w + gap) * i
+        add_rect(slide, x, top, box_w, box_h, NAVY, corner=True)
+        add_text_box(
+            slide, x + Inches(0.06), top + Inches(0.08), box_w - Inches(0.12), box_h - Inches(0.14),
+            t, size=Pt(12), color=Theme.WHITE, bold=True, align=PP_ALIGN.CENTER, anchor=MSO_ANCHOR.MIDDLE,
+        )
+        if i < len(items) - 1:
+            add_right_arrow(
+                slide, x + box_w + Inches(0.04), top + Inches(0.22), Inches(0.34), Inches(0.28), GOLD,
+            )
+
+
+def add_purpose_slide(prs, page):
     slide = blank_slide(prs)
     header_bar(slide, "この資料で伝えたいこと", "発明開示書の素案を、Copilotで速く・抜けなく作る")
     cards = [
         ("誰向け", "初めて開示書を書く人\nAIで知財業務を進めたい人"),
         ("何が変わる", "数日〜1週間 → 数時間で素案\n中身の責任は発明者自身"),
-        ("進め方", "近い先行特許を先に見る\nクレームはそのあとで書く"),
+        ("進め方", "作業順はStep 0〜5\n先行特許は2回見る"),
     ]
     for i, (t, b) in enumerate(cards):
         x = Inches(0.5) + Inches(4.2) * i
@@ -120,11 +123,11 @@ def add_purpose_slide(prs):
         add_rect(slide, x, Inches(1.5), Inches(3.95), Inches(0.7), NAVY)
         add_text_box(slide, x, Inches(1.6), Inches(3.95), Inches(0.5), t, size=Pt(18), color=Theme.WHITE, bold=True, align=PP_ALIGN.CENTER)
         add_text_box(slide, x + Inches(0.25), Inches(2.5), Inches(3.45), Inches(3.2), b, size=Pt(16), color=Theme.TEXT)
-    _footer(slide, "2")
+    _footer(slide, page)
     return slide
 
 
-def add_guardrail_slide(prs):
+def add_guardrail_slide(prs, page):
     slide = blank_slide(prs)
     header_bar(slide, "使う前の約束", "入力してよい情報と、AIの位置づけ")
     rows = [
@@ -144,16 +147,16 @@ def add_guardrail_slide(prs):
     add_text_box(
         slide, Inches(0.75), Inches(5.2), Inches(11.8), Inches(1.35),
         "① Copilotで60点の素案  →  ② 人と議論して直す  →  ③ もう一度Copilotで整える\n"
-        "出力をそのまま貼らない。後から自分で説明できることだけ残す。",
+        "各Stepの「回答例」は①。「仕上げ例」は③。出力をそのまま貼らない。",
         size=Pt(15), color=Theme.TEXT,
     )
-    _footer(slide, "3")
+    _footer(slide, page)
     return slide
 
 
-def add_tools_slide(prs):
+def add_tools_slide(prs, page):
     slide = blank_slide(prs)
-    header_bar(slide, "使う道具", "まずはCopilot。先行特許の調査も、最初はここでよい")
+    header_bar(slide, "使う道具", "文章はCopilot。PatentSQUAREは、クレーム案のあとの衝突確認で使う")
 
     add_rect(slide, Inches(0.5), Inches(1.45), Inches(8.05), Inches(5.35), Theme.CARD, corner=True)
     add_rect(slide, Inches(0.5), Inches(1.45), Inches(8.05), Inches(0.85), NAVY)
@@ -164,10 +167,9 @@ def add_tools_slide(prs):
     add_text_box(
         slide, Inches(0.85), Inches(2.55), Inches(7.35), Inches(3.85),
         "・文章の下書き・整理・用語そろえ\n"
-        "・近い先行特許の見当をつける（キーワード、似ている点／違う点）\n"
-        "・自然な言葉で依頼する\n\n"
-        "クレームを書く前に、近い先行特許を見る。\n"
-        "その調査も、最初はCopilotでよい。",
+        "・Step 1の先行特許調査（背景と、クレームの方向性）\n"
+        "・図（Graphviz）も、社外ツールを使わずここで作る\n\n"
+        "自然な言葉で依頼する。出力はそのまま貼らない。",
         size=Pt(16), color=Theme.TEXT,
     )
 
@@ -175,26 +177,27 @@ def add_tools_slide(prs):
     add_rect(slide, Inches(8.75), Inches(1.45), Inches(4.05), Inches(0.85), Theme.PRIMARY_LIGHT)
     add_text_box(
         slide, Inches(8.75), Inches(1.52), Inches(4.05), Inches(0.32),
-        "社内ツール　上級者向け", size=Pt(12), color=Theme.WHITE, bold=True, align=PP_ALIGN.CENTER,
+        "社内ツール　Step 4と5の間", size=Pt(12), color=Theme.WHITE, bold=True, align=PP_ALIGN.CENTER,
     )
     add_text_box(
         slide, Inches(8.75), Inches(1.82), Inches(4.05), Inches(0.40),
         "PatentSQUARE", size=Pt(18), color=Theme.WHITE, bold=True, align=PP_ALIGN.CENTER,
     )
     add_text_box(
-        slide, Inches(9.0), Inches(2.55), Inches(3.55), Inches(3.85),
-        "特許を本格的に探す、社内の仕組みです。\n\n"
-        "最初は使わなくてよい。\n\n"
-        "慣れてきたら使うと、調査がより確かになる。",
-        size=Pt(15), color=Theme.TEXT,
+        slide, Inches(9.0), Inches(2.50), Inches(3.55), Inches(3.95),
+        "クレーム案が先行特許と衝突しないかを、本格的に見るときに使う。\n\n"
+        "使い方はこのマニュアルでは説明しない。\n\n"
+        "参考：知的財産部ホームページ（利用案内）\n"
+        f"{PS_REF}",
+        size=Pt(13), color=Theme.TEXT,
     )
-    _footer(slide, "4")
+    _footer(slide, page)
     return slide
 
 
-def add_template_slide(prs):
+def add_template_slide(prs, page):
     slide = blank_slide(prs)
-    header_bar(slide, "発明開示書に書くこと", "ANAQUAの項目。この順で埋めていく")
+    header_bar(slide, "最終の章立て（ANAQUA）", "これは書き順ではない。最後に開示書へ落とすときの形です")
     items = [
         ("1", "技術分野"),
         ("2.1", "従来の図"),
@@ -208,59 +211,103 @@ def add_template_slide(prs):
     ]
     for i, (n, t) in enumerate(items):
         x = Inches(0.45) + Inches(1.4) * i
-        add_rect(slide, x, Inches(2.3), Inches(1.28), Inches(3.2), Theme.CARD, corner=True)
-        add_circle(slide, x + Inches(0.34), Inches(2.55), Inches(0.55), NAVY)
-        add_text_box(slide, x + Inches(0.34), Inches(2.62), Inches(0.55), Inches(0.42), n, size=Pt(11), color=Theme.WHITE, bold=True, align=PP_ALIGN.CENTER, anchor=MSO_ANCHOR.MIDDLE)
-        add_text_box(slide, x + Inches(0.08), Inches(3.3), Inches(1.12), Inches(1.8), t, size=Pt(14), color=NAVY, bold=True, align=PP_ALIGN.CENTER)
+        add_rect(slide, x, Inches(2.15), Inches(1.28), Inches(2.85), Theme.CARD, corner=True)
+        add_circle(slide, x + Inches(0.34), Inches(2.38), Inches(0.55), NAVY)
+        add_text_box(slide, x + Inches(0.34), Inches(2.45), Inches(0.55), Inches(0.42), n, size=Pt(11), color=Theme.WHITE, bold=True, align=PP_ALIGN.CENTER, anchor=MSO_ANCHOR.MIDDLE)
+        add_text_box(slide, x + Inches(0.08), Inches(3.10), Inches(1.12), Inches(1.6), t, size=Pt(14), color=NAVY, bold=True, align=PP_ALIGN.CENTER)
+    add_rect(slide, Inches(0.45), Inches(5.25), Inches(12.4), Inches(1.55), CREAM, corner=True)
     add_text_box(
-        slide, Inches(0.5), Inches(5.75), Inches(12.3), Inches(0.9),
-        "テンプレート：知的財産部ホームページ（ANAQUA形式）\nクレーム案（5）は、先行特許調査のあとで書く。",
-        size=Pt(14), color=Theme.TEXT_MUTED,
+        slide, Inches(0.65), Inches(5.38), Inches(12.0), Inches(1.30),
+        "作業は次のページの Step 0〜5 の順で進める。\n"
+        "この章立てに中身を写すのは、いちばん最後（Step 5）です。\n"
+        "テンプレート：知的財産部ホームページ（ANAQUA形式）",
+        size=Pt(15), color=NAVY, bold=True,
     )
-    _footer(slide, "5")
+    _footer(slide, page)
     return slide
 
 
-def add_process_slide(prs):
+def add_process_slide(prs, page):
     slide = blank_slide(prs)
-    header_bar(slide, "全体の手順と、各Stepのゴール", "上段がやること。下段がゴール。ゴールに達したら次へ進む")
+    header_bar(slide, "本マニュアルの作業順", "上段がやること。下段がゴール。5枚目の章立てとは別物です")
     steps = [
         ("0", "タネを言語化", "課題と解決を\n30秒で話せる"),
-        ("1", "先行特許を先に見る", "近い先行特許と\n被りそうな点が見える"),
-        ("2", "本発明を具体化", "構成と流れと\n先行特許にない点が言える"),
+        ("1", "先行特許で\n背景と方向性", "近い先行特許と\n方向性が見える"),
+        ("2", "本発明を具体化", "構成と流れと\n差が言える"),
         ("3", "差を表にする", "従来との差が\n1枚の表になる"),
         ("4", "クレームと発展", "被りにくい\n守り方が書ける"),
-        ("5", "開示書へ落とす", "項目が埋まり\n矛盾がない"),
+        ("5", "開示書へ落とす", "章立てが埋まり\n矛盾がない"),
     ]
     for i, (n, t, g) in enumerate(steps):
         x = Inches(0.38) + Inches(2.16) * i
-        color = NAVY
-        add_rect(slide, x, Inches(1.42), Inches(2.06), Inches(5.38), Theme.CARD, corner=True)
-        add_circle(slide, x + Inches(0.72), Inches(1.58), Inches(0.52), color)
+        add_rect(slide, x, Inches(1.38), Inches(2.06), Inches(4.55), Theme.CARD, corner=True)
+        add_circle(slide, x + Inches(0.72), Inches(1.50), Inches(0.48), NAVY)
         add_text_box(
-            slide, x + Inches(0.72), Inches(1.64), Inches(0.52), Inches(0.40), n,
-            size=Pt(16), color=Theme.WHITE, bold=True, align=PP_ALIGN.CENTER, anchor=MSO_ANCHOR.MIDDLE,
+            slide, x + Inches(0.72), Inches(1.54), Inches(0.48), Inches(0.40), n,
+            size=Pt(15), color=Theme.WHITE, bold=True, align=PP_ALIGN.CENTER, anchor=MSO_ANCHOR.MIDDLE,
         )
         add_text_box(
-            slide, x + Inches(0.08), Inches(2.22), Inches(1.9), Inches(0.85), t,
+            slide, x + Inches(0.08), Inches(2.08), Inches(1.9), Inches(0.85), t,
             size=Pt(13), color=Theme.TEXT_MUTED, align=PP_ALIGN.CENTER,
         )
-        add_rect(slide, x + Inches(0.12), Inches(3.15), Inches(1.82), Inches(0.05), color)
-        add_rect(slide, x + Inches(0.10), Inches(3.38), Inches(1.86), Inches(3.15), GOAL_BG, corner=True)
+        add_rect(slide, x + Inches(0.12), Inches(2.98), Inches(1.82), Inches(0.05), NAVY)
+        add_rect(slide, x + Inches(0.10), Inches(3.15), Inches(1.86), Inches(2.55), GOAL_BG, corner=True)
         add_text_box(
-            slide, x + Inches(0.12), Inches(3.48), Inches(1.82), Inches(0.38), "ゴール",
+            slide, x + Inches(0.12), Inches(3.22), Inches(1.82), Inches(0.32), "ゴール",
             size=Pt(12), color=GOLD, bold=True, align=PP_ALIGN.CENTER,
         )
         add_text_box(
-            slide, x + Inches(0.14), Inches(3.90), Inches(1.78), Inches(2.4), g,
-            size=Pt(15), color=NAVY, bold=True, align=PP_ALIGN.CENTER,
+            slide, x + Inches(0.14), Inches(3.55), Inches(1.78), Inches(2.0), g,
+            size=Pt(14), color=NAVY, bold=True, align=PP_ALIGN.CENTER,
         )
         if i < 5:
             add_text_box(
-                slide, x + Inches(1.88), Inches(1.68), Inches(0.32), Inches(0.4), "→",
+                slide, x + Inches(1.88), Inches(1.55), Inches(0.32), Inches(0.4), "→",
                 size=Pt(16), color=GOLD, bold=True,
             )
-    _footer(slide, "6")
+    add_rect(slide, Inches(0.38), Inches(6.05), Inches(12.55), Inches(1.00), CREAM, corner=True)
+    add_text_box(
+        slide, Inches(0.55), Inches(6.14), Inches(12.2), Inches(0.82),
+        "先行特許は2回見る　Step 1＝背景と方向性　／　Step 4と5の間＝クレーム案の衝突確認（PatentSQUARE）\n"
+        "衝突したら Step 2 へ戻る。次のページで、この2回の役割を分けて示す。",
+        size=Pt(14), color=NAVY, bold=True,
+    )
+    _footer(slide, page)
+    return slide
+
+
+def add_two_searches_slide(prs, page):
+    slide = blank_slide(prs)
+    header_bar(slide, "先行特許は2回見る", "同じ調査を繰り返すのではなく、見るものが違う")
+    cols = [
+        (
+            "1回目　Step 1",
+            "背景の調査。近い先行特許に被らないよう、クレーム案のおおまかな方向性を決める。",
+            "・Copilotで近い特許の見当をつける\n"
+            "・似ている点／違う点を一言にする\n"
+            "・独立項の核になりそうな方向だけ決める\n"
+            "・この段階ではクレームの文言は書かない\n"
+            "・PatentSQUAREはまだ使わない",
+        ),
+        (
+            "2回目　Step 4と5の間",
+            "作ったクレーム案が、先行特許と衝突するかを判断する。",
+            "・ここがPatentSQUAREの出番\n"
+            "・使い方はこのマニュアルでは説明しない\n"
+            "・参考：知的財産部ホームページ\n"
+            f"・{PS_REF}\n"
+            "・衝突するなら Step 2 へ戻る\n"
+            "・衝突しなければ Step 5 へ進む",
+        ),
+    ]
+    for i, (t, lead, body) in enumerate(cols):
+        x = Inches(0.45) + Inches(6.4) * i
+        add_rect(slide, x, Inches(1.40), Inches(6.15), Inches(5.40), Theme.CARD, corner=True)
+        add_rect(slide, x, Inches(1.40), Inches(6.15), Inches(0.70), NAVY)
+        add_text_box(slide, x, Inches(1.50), Inches(6.15), Inches(0.50), t, size=Pt(18), color=Theme.WHITE, bold=True, align=PP_ALIGN.CENTER)
+        add_text_box(slide, x + Inches(0.28), Inches(2.25), Inches(5.60), Inches(1.15), lead, size=Pt(14), color=NAVY, bold=True)
+        add_text_box(slide, x + Inches(0.28), Inches(3.50), Inches(5.60), Inches(3.00), body, size=Pt(14), color=Theme.TEXT)
+    _footer(slide, page)
     return slide
 
 
@@ -274,14 +321,8 @@ def add_step_slide(prs, *, page, step, title, goal, check, do_items, question, a
     _progress(slide, int(step))
 
     add_rect(slide, Inches(0.40), Inches(0.88), Inches(12.52), Inches(0.95), NAVY, corner=True)
-    add_text_box(
-        slide, Inches(0.60), Inches(0.92), Inches(3.2), Inches(0.28),
-        "このStepのゴール", size=Pt(12), color=GOLD, bold=True,
-    )
-    add_text_box(
-        slide, Inches(0.60), Inches(1.18), Inches(12.12), Inches(0.55),
-        goal, size=Pt(20), color=Theme.WHITE, bold=True, anchor=MSO_ANCHOR.MIDDLE,
-    )
+    add_text_box(slide, Inches(0.60), Inches(0.92), Inches(3.2), Inches(0.28), "このStepのゴール", size=Pt(12), color=GOLD, bold=True)
+    add_text_box(slide, Inches(0.60), Inches(1.18), Inches(12.12), Inches(0.55), goal, size=Pt(20), color=Theme.WHITE, bold=True, anchor=MSO_ANCHOR.MIDDLE)
 
     add_rect(slide, Inches(0.40), Inches(1.92), Inches(12.52), Inches(0.42), CREAM, corner=True)
     add_text_box(
@@ -303,28 +344,111 @@ def add_step_slide(prs, *, page, step, title, goal, check, do_items, question, a
     return slide
 
 
-def add_drawing_slide(prs):
+def add_polished_slide(prs, *, page, step, title, body):
     slide = blank_slide(prs)
-    header_bar(slide, "図はGraphvizで作る", "コードはCopilotに書かせ、自分で図の正しさを見る")
-    add_rect(slide, Inches(0.5), Inches(1.45), Inches(12.3), Inches(1.1), Theme.CARD, corner=True)
+    add_rect(slide, 0, 0, Theme.SLIDE_WIDTH, Inches(0.10), NAVY)
     add_text_box(
-        slide, Inches(0.75), Inches(1.65), Inches(11.9), Inches(0.75),
-        "https://dreampuf.github.io/GraphvizOnline/   →  PNG / SVG で保存",
-        size=Pt(16), color=NAVY, bold=True, anchor=MSO_ANCHOR.MIDDLE,
+        slide, Inches(0.45), Inches(0.22), Inches(7.5), Inches(0.55),
+        f"Step {step}　仕上げ（③）　{title}", size=Pt(20), color=NAVY, bold=True, anchor=MSO_ANCHOR.MIDDLE,
     )
-    items = [
-        "図1 従来フロー（手作業のC&E / FBD）",
-        "図2 本発明の構成（入力・知識・合成・検証・出力）",
-        "図3 処理の流れ（取り込み〜出力）",
-        "図4 トレーサビリティの例",
+    _progress(slide, int(step))
+    add_rect(slide, Inches(0.40), Inches(0.88), Inches(12.52), Inches(0.58), ANS, corner=True)
+    add_text_box(
+        slide, Inches(0.60), Inches(0.96), Inches(12.12), Inches(0.42),
+        "3枚目の③　人と議論したあと、Copilotでもう一度整えた版。①より量が多く、開示書に近い。",
+        size=Pt(14), color=Theme.WHITE, bold=True, anchor=MSO_ANCHOR.MIDDLE,
+    )
+    add_rect(slide, Inches(0.40), Inches(1.58), Inches(12.52), Inches(5.40), Theme.CARD, corner=True)
+    add_rect(slide, Inches(0.40), Inches(1.58), Inches(0.12), Inches(5.40), ANS)
+    _paras(
+        slide, Inches(0.70), Inches(1.72), Inches(11.95), Inches(5.10),
+        body, size=Pt(12), color=Theme.TEXT, space_after=Pt(4),
+    )
+    _footer(slide, page)
+    return slide
+
+
+def add_conflict_slide(prs, page):
+    slide = blank_slide(prs)
+    header_bar(slide, "Step 4と5の間　クレーム案の衝突確認", "ここがPatentSQUAREの出番。衝突したら Step 2 へ戻る")
+    add_rect(slide, Inches(0.45), Inches(1.40), Inches(12.4), Inches(1.15), NAVY, corner=True)
+    add_text_box(slide, Inches(0.65), Inches(1.48), Inches(3.2), Inches(0.28), "この確認のゴール", size=Pt(12), color=GOLD, bold=True)
+    add_text_box(
+        slide, Inches(0.65), Inches(1.78), Inches(12.0), Inches(0.60),
+        "作ったクレーム案が、先行特許と衝突しないと判断できる",
+        size=Pt(18), color=Theme.WHITE, bold=True, anchor=MSO_ANCHOR.MIDDLE,
+    )
+    boxes = [
+        ("やること", "PatentSQUAREで、独立項の核に近い文献を見る。使い方は本マニュアルでは説明しない。"),
+        ("判断", "衝突する → Step 2へ戻り、構成と差をずらす。\n衝突しない → Step 5へ進み、ANAQUAの章立てへ落とす。"),
+        ("参考", f"知的財産部ホームページ（PatentSQUARE利用案内）\n{PS_REF}"),
     ]
-    for i, t in enumerate(items):
-        x = Inches(0.5) + Inches(3.15) * i
-        add_rect(slide, x, Inches(2.85), Inches(3.0), Inches(3.3), Theme.CARD, corner=True)
-        add_circle(slide, x + Inches(1.1), Inches(3.15), Inches(0.7), NAVY)
-        add_text_box(slide, x + Inches(1.1), Inches(3.28), Inches(0.7), Inches(0.45), str(i + 1), size=Pt(18), color=Theme.WHITE, bold=True, align=PP_ALIGN.CENTER)
-        add_text_box(slide, x + Inches(0.15), Inches(4.05), Inches(2.7), Inches(1.7), t, size=Pt(14), color=Theme.TEXT, align=PP_ALIGN.CENTER)
-    _footer(slide, "13")
+    for i, (t, b) in enumerate(boxes):
+        y = Inches(2.75) + Inches(1.35) * i
+        add_rect(slide, Inches(0.45), y, Inches(12.4), Inches(1.22), Theme.CARD, corner=True)
+        add_text_box(slide, Inches(0.70), y + Inches(0.12), Inches(2.2), Inches(0.98), t, size=Pt(16), color=NAVY, bold=True, anchor=MSO_ANCHOR.MIDDLE)
+        add_text_box(slide, Inches(3.00), y + Inches(0.18), Inches(9.55), Inches(0.90), b, size=Pt(14), color=Theme.TEXT, anchor=MSO_ANCHOR.MIDDLE)
+    _footer(slide, page)
+    return slide
+
+
+def add_graphviz_policy_slide(prs, page):
+    slide = blank_slide(prs)
+    header_bar(slide, "図はCopilotの中だけで作る", "社外のGraphvizサイトやオンラインツールは使わない")
+    cards = [
+        ("なぜ社外ツールを使わないか", "発明のタネを外部サイトへ貼ると、情報漏れになる。Graphviz Online などは使わない。"),
+        ("何をCopilotに頼むか", "① GraphvizのDOTを書く　② 同じ会話で、その図を出す。外部サービスは指定しない。"),
+        ("自分が見ること", "素子名・矢印・分岐が、開示書の文章と一致するか。図がきれいでも中身が違うなら直す。"),
+    ]
+    for i, (t, b) in enumerate(cards):
+        y = Inches(1.40) + Inches(1.75) * i
+        add_rect(slide, Inches(0.5), y, Inches(12.3), Inches(1.60), Theme.CARD, corner=True)
+        add_circle(slide, Inches(0.75), y + Inches(0.45), Inches(0.70), NAVY)
+        add_text_box(slide, Inches(0.75), y + Inches(0.55), Inches(0.70), Inches(0.50), str(i + 1), size=Pt(18), color=Theme.WHITE, bold=True, align=PP_ALIGN.CENTER)
+        add_text_box(slide, Inches(1.70), y + Inches(0.22), Inches(10.8), Inches(0.45), t, size=Pt(18), color=NAVY, bold=True)
+        add_text_box(slide, Inches(1.70), y + Inches(0.75), Inches(10.8), Inches(0.65), b, size=Pt(15), color=Theme.TEXT)
+    _footer(slide, page)
+    return slide
+
+
+def add_graphviz_howto_slide(prs, page):
+    slide = blank_slide(prs)
+    header_bar(slide, "Copilotへの聞き方（Graphviz）", "2回に分けて頼む。例は安全計装ロジック自動構築ツール")
+    add_rect(slide, Inches(0.45), Inches(1.40), Inches(12.4), Inches(2.35), Theme.CARD, corner=True)
+    add_text_box(slide, Inches(0.65), Inches(1.50), Inches(12.0), Inches(0.35), "1回目　DOTを書かせる", size=Pt(16), color=ASK, bold=True)
+    _paras(
+        slide, Inches(0.65), Inches(1.90), Inches(12.0), Inches(1.70),
+        "『安全計装ロジック自動構築ツールの従来フローを、GraphvizのDOTで書いてください。"
+        "HAZOP→手作業のC&E→手作業のFBD→別ツールのSIL検証、の順です。"
+        "社外のレンダリングサービスは使わず、コードだけ出してください。』",
+        size=Pt(14), color=Theme.TEXT, space_after=Pt(2),
+    )
+    add_rect(slide, Inches(0.45), Inches(3.90), Inches(12.4), Inches(2.90), Theme.CARD, corner=True)
+    add_text_box(slide, Inches(0.65), Inches(4.00), Inches(12.0), Inches(0.35), "2回目　同じ会話で図を出させる", size=Pt(16), color=ANS, bold=True)
+    _paras(
+        slide, Inches(0.65), Inches(4.42), Inches(12.0), Inches(2.20),
+        "『今のDOTを、この会話の中でフローチャートの図にしてください。外部サイトへ貼らないでください。"
+        "図が出ないときは、PowerPointの図形で同じ流れを書いてください。』\n"
+        "出てきた図を見て、名前と矢印が文章と合うか確認する。合わなければ『検証から合成へ戻る矢印を足して』と直させる。",
+        size=Pt(14), color=Theme.TEXT, space_after=Pt(3),
+    )
+    _footer(slide, page)
+    return slide
+
+
+def add_graphviz_example_slide(prs, *, page, title, subtitle, prompt, nodes, note, extra_nodes=None, box_w=None, gap=None):
+    slide = blank_slide(prs)
+    header_bar(slide, title, subtitle)
+    add_rect(slide, Inches(0.45), Inches(1.35), Inches(12.4), Inches(1.35), Theme.CARD, corner=True)
+    add_text_box(slide, Inches(0.65), Inches(1.42), Inches(12.0), Inches(0.28), "Copilotへの依頼", size=Pt(13), color=ASK, bold=True)
+    add_text_box(slide, Inches(0.65), Inches(1.72), Inches(12.0), Inches(0.85), prompt, size=Pt(13), color=Theme.TEXT)
+    add_text_box(slide, Inches(0.45), Inches(2.80), Inches(12.4), Inches(0.32), "Copilotが出した図の例（このマニュアルの安全計装の例）", size=Pt(13), color=ANS, bold=True)
+    _flow_row(slide, nodes, Inches(3.20), left=Inches(0.45), box_w=box_w or Inches(2.20), box_h=Inches(0.80), gap=gap or Inches(0.38))
+    if extra_nodes:
+        add_text_box(slide, Inches(0.45), Inches(4.15), Inches(12.4), Inches(0.28), extra_nodes[0], size=Pt(12), color=Theme.TEXT_MUTED)
+        _flow_row(slide, extra_nodes[1], Inches(4.48), left=Inches(0.45), box_w=box_w or Inches(2.20), box_h=Inches(0.80), gap=gap or Inches(0.38))
+    add_text_box(slide, Inches(0.45), Inches(5.55 if extra_nodes else 4.20), Inches(12.4), Inches(1.40), note, size=Pt(14), color=NAVY)
+    _footer(slide, page)
     return slide
 
 
@@ -332,22 +456,29 @@ def build_deck():
     prs = Presentation()
     prs.slide_width = Theme.SLIDE_WIDTH
     prs.slide_height = Theme.SLIDE_HEIGHT
+    n = 1
+
+    def pg():
+        nonlocal n
+        n += 1
+        return str(n)
 
     add_title_slide(
         prs,
         title="Copilotで作る\n発明開示書",
-        subtitle="ゼロから素案まで　─　先行特許調査を先に、クレームは後で",
+        subtitle="ゼロから素案まで　─　作業順と、最終の章立ては別",
         footer="王 者興  |  MKDS BDD Gr1.  |  2026/06/12",
     )
-    add_purpose_slide(prs)
-    add_guardrail_slide(prs)
-    add_tools_slide(prs)
-    add_template_slide(prs)
-    add_process_slide(prs)
+    add_purpose_slide(prs, pg())
+    add_guardrail_slide(prs, pg())
+    add_tools_slide(prs, pg())
+    add_template_slide(prs, pg())
+    add_process_slide(prs, pg())
+    add_two_searches_slide(prs, pg())
 
     add_step_slide(
         prs,
-        page="7",
+        page=pg(),
         step="0",
         title="発明のタネを言葉にする",
         goal="課題と解決の骨格を、口頭で30秒話せる",
@@ -367,30 +498,61 @@ def build_deck():
             "この骨格で30秒話せるようになったら、次は近い先行特許を探します。『自動生成』という言葉だけで権利の話に入らないでください。"
         ),
     )
+    add_polished_slide(
+        prs,
+        page=pg(),
+        step="0",
+        title="発明のタネ",
+        body=(
+            "技術分野：プラントの安全計装（SIS）設計。対象は、HAZOPの結果からSIF（安全計装機能）のロジックを組み立て、SIL検証までつなぐ作業である。\n"
+            "背景：現状の設計では、HAZOPワークショップで危険シナリオを出したあと、原因と結果の表（C&E）とファンクションブロック図（FBD）を担当者が手作業で作る。SIL検証は別ツールで行い、結果を設計書へ転記する。入力はHAZOP表、P&ID、機器リスト。出力はSIFロジックと検証記録である。ツールが分かれているため、同じ情報を何度も写している。\n"
+            "従来の問題：転記と作図に時間がかかる。担当者ごとにロジックの切り方と命名がぶれる。HAZOP項目の漏れや、設計変更が検証側に届かないことがある。「なぜこの素子が入ったか」が成果物に残らず、レビューと変更影響の把握が属人的になる。\n"
+            "目的：HAZOP等の入力からSIFロジックを合成し、検証し、成果物と追跡表として出すことで、工数・属人化・漏れ・変更追跡の問題を同時に減らす。\n"
+            "本発明の概要：入力部、知識ベース、合成エンジン、検証部、出力部を持つ。人が見る点（例外シナリオ、特殊インターロック、不合格時の方針）は残す。自動生成だけで終わらせない。\n"
+            "効果：工数削減、切り方のそろえ、漏れの早期発見、変更時の影響範囲の可視化。数字は自部署の実績に置き換える。\n"
+            "次に進む条件：この骨格を、資料を見ずに30秒で話せる。"
+        ),
+    )
+
     add_step_slide(
         prs,
-        page="8",
+        page=pg(),
         step="1",
-        title="先行特許を先に見る",
-        goal="近い特許がリストになり、被りそうな点が見えている",
-        check="類似文献が数件あり、「似ている点／違う点」を一言で言える",
+        title="先行特許で背景と方向性を見る",
+        goal="近い先行特許が見え、クレーム案のおおまかな方向性が決まる",
+        check="被りそうな点を避けた方向を、一言で言える",
         do_items=[
             "Copilotで近い先行特許を聞く",
             "似ている点／違う点を整理する",
-            "この段階ではクレームを書かない",
+            "方向だけ決める（文言は書かない）",
         ],
         question="本発明に近い先行特許を探すキーワードと、調査で見る観点を出してください。権利範囲（クレーム）はまだ作らないでください。ヒットした『自動生成』だけで本発明と同じと思わないようにしてください。",
         answer=(
-            "了解です。クレームは書きません。先に『何が近いか』を見るための検索語と、読むときの観点だけ出します。まずはCopilotにこのまま聞いて、近い特許の見当をつけてください。社内にはPatentSQUAREという本格的な特許検索もあります。上級者向けなので、最初は使わなくてよいです。慣れたらそこで確認すると、調査がより確かになります。\n"
+            "了解です。クレームの文言は書きません。先に『何が近いか』を見る検索語と、読む観点だけ出します。まずはCopilotで近い特許の見当をつけてください。本格的な衝突確認は、クレーム案を作ったあと（Step 4と5の間）にPatentSQUAREで行います。\n"
             "■ 検索の核　安全計装、SIS、SIF、HAZOP、C&E、cause and effect、FBD、インターロック、トリップロジック、ロジック自動生成、SIL検証、トレーサビリティ。英語も併用：safety instrumented system, automatic generation, cause and effect matrix。\n"
             "■ 組み合わせ例　「HAZOP 自動 AND SIF」「cause and effect 自動生成 安全計装」「SIL verification 自動 ロジック」。広すぎたら『検証』『追跡』『HAZOP』を必須語にして絞る。\n"
-            "■ 読む観点（ここが本命）　①ロジックをどこまで自動で作るか（ルールだけか、知識ベースか）　②SIL検証とつながるか　③HAZOP項目と成果物の対応が残るか　④人がどこを確認するか　⑤対象がSISか、DCSの一般ロジックか。\n"
-            "■ 注意　『自動生成』は先行特許にもよく出ます。生成までで止まっているか、検証結果を設計へ戻しているか、追跡表があるか、を先に見てください。似ている点／違う点が一言で言えたら、Step 2へ進みます。"
+            "■ 読む観点　①ロジックをどこまで自動で作るか　②SIL検証とつながるか　③HAZOP項目と成果物の対応が残るか　④人がどこを確認するか　⑤対象がSISか、DCSの一般ロジックか。\n"
+            "■ 方向性の決め方　『自動生成』は先行特許にも多い。方向の核は『検証結果を設計へ戻す』『入力項目と素子の対応を残す』に置く。文言はまだ書かない。"
         ),
     )
+    add_polished_slide(
+        prs,
+        page=pg(),
+        step="1",
+        title="背景調査と方向性",
+        body=(
+            "調査の目的（1回目）：背景をつかむことと、あとで書くクレーム案が近い先行特許に正面から被らないよう、方向だけ決めること。衝突の最終判断はしない。PatentSQUAREは使わない。\n"
+            "検索語（確定版）：安全計装／SIS／SIF／HAZOP／C&E／FBD／インターロック／ロジック自動生成／SIL検証／トレーサビリティ。英語：safety instrumented system, cause and effect matrix, automatic generation, SIL verification。必須の絞り込み語は「検証」または「追跡」。\n"
+            "近い先行特許の型（Copilotが見立てた例）：A ルールでC&Eを自動生成する　B インターロックロジックをライブラリから組み立てる　C SIL計算を支援する　D HAZOP支援だが成果物への追跡がない。いずれも『生成まで』または『検証だけ』で止まっていることが多い。\n"
+            "似ている点：HAZOPやルールからロジックを自動で作る、という言い方。違う点：検証結果を設計成果物へ戻すか、HAZOP項目と素子の対応表を出すか、人が例外を確認する点を残すか。\n"
+            "決めた方向（クレームの核の候補）：独立項の核は『自動生成』に置かない。『合成＋検証＋設計への反映＋対応の記録』に置く。文言はStep 4まで書かない。\n"
+            "次に進む条件：似ている点／違う点と、避ける方向を一言で言える。"
+        ),
+    )
+
     add_step_slide(
         prs,
-        page="9",
+        page=pg(),
         step="2",
         title="本発明を具体化する",
         goal="構成・処理の流れ・先行特許にない点が説明できる",
@@ -405,13 +567,26 @@ def build_deck():
             "先行特許の『ルールでロジックを自動生成する』は残しつつ、本発明が厚いところ（検証と追跡）を構成と流れで書きます。ここが後の差の表とクレームの材料になります。\n"
             "■ 構成　①入力部：HAZOP表、機器リスト、必要ならP&IDのタグ　②知識ベース：SIFパターン、禁止組み合わせ、命名規則　③合成エンジン：シナリオからC&E／FBDを生成　④検証部：SIL計算、入力とロジックの整合チェック　⑤出力部：設計書、追跡表　⑥人が見る点：例外シナリオ、特殊インターロック、不合格時の方針。\n"
             "■ 流れ　取り込む → シナリオをSIF候補にする → 知識ベースを参照してロジックを合成する → 検証する → 成果物と追跡表を出す。不合格なら合成に戻る。人が確認してから確定する。\n"
-            "■ 先行特許との差（厚く書くところ）　先行特許は生成までが多い。本発明は検証結果を設計成果物へ戻し、HAZOPの原因−SIF−素子の対応を残す。自動生成そのものは差になりにくいので、ここを具体例つきで書いてください。\n"
-            "次は、この差を1枚の表にします。差が弱い欄は、あとでクレームの核にしない候補です。"
+            "■ 先行特許との差　先行特許は生成までが多い。本発明は検証結果を設計成果物へ戻し、HAZOPの原因−SIF−素子の対応を残す。自動生成そのものは差になりにくいので、ここを具体例つきで書いてください。"
         ),
     )
+    add_polished_slide(
+        prs,
+        page=pg(),
+        step="2",
+        title="構成と流れ",
+        body=(
+            "システム構成（開示書3.3向け）：(1)入力部はHAZOP表、機器リスト、任意でP&IDタグを取り込む。(2)知識ベースはSIFパターン、禁止組み合わせ、命名規則を持つ。(3)合成エンジンはシナリオからC&EとFBDを生成する。(4)検証部はSIL計算と、入力項目とロジックの整合を見る。(5)出力部は設計書と追跡表を出す。(6)人が見る点は、例外シナリオ、特殊インターロック、不合格時の方針である。\n"
+            "処理の流れ：取り込む → シナリオをSIF候補にする → 知識ベースを参照して合成する → 検証する → 成果物と追跡表を出す。不合格なら合成に戻る。人が確認してから確定する。確定後に設計変更が入った場合は、追跡表から影響範囲を出して再検証する。\n"
+            "先行特許にないところ（厚く書く）：検証結果を設計成果物へ戻すこと。HAZOPの原因−SIF−素子の対応を記録すること。不合格時に合成へ戻る閉じたループを持つこと。人が例外を確認する点を、システム構成の一部として残すこと。\n"
+            "先行特許と重なりやすいところ（薄く書く）：ルールベースであること、ロジックを自動生成すること自体。ここを独立項の核にしない。\n"
+            "図にする対象：図1 従来フロー　図2 本発明の構成　図3 処理の流れ　図4 追跡表の例。図はあとでCopilotにGraphvizで作らせる。社外ツールは使わない。"
+        ),
+    )
+
     add_step_slide(
         prs,
-        page="10",
+        page=pg(),
         step="3",
         title="従来技術との差を表にする",
         goal="従来／課題／差／優位性が、1枚の表で対比できる",
@@ -428,12 +603,30 @@ def build_deck():
             "■ 従来の課題　転記ミスと属人化が残る。生成結果の根拠が残らない。変更が入ると、どのHAZOP項目とどの素子を直すかが追えない。\n"
             "■ 差　本発明は合成に加え、検証部を持ち、検証結果を成果物へ戻す。HAZOP原因−SIF−素子の追跡表を出す。不合格時は合成に戻る。人が例外を確認する点を残す。\n"
             "■ 優位性　漏れに気づきやすい。レビューが追跡表でできる。変更時に影響範囲が見える。担当者による切り方のぶれを知識ベースで抑えやすい。\n"
-            "■ 差が弱い欄　『自動生成すること自体』『ルールベースであること』は先行特許と重なりやすい。クレームの核にしない。核は『検証結果の設計への反映』と『入力項目と素子の対応の記録』に置く。"
+            "■ 差が弱い欄　『自動生成すること自体』『ルールベースであること』は先行特許と重なりやすい。クレームの核にしない。"
         ),
     )
+    add_polished_slide(
+        prs,
+        page=pg(),
+        step="3",
+        title="差の表",
+        body=(
+            "対比表（開示書2.2／3.4に写す）：\n"
+            "項目／従来／本発明\n"
+            "ロジック作成　手作業、またはルールで生成まで　合成したあと検証し、不合格なら合成に戻る\n"
+            "検証　別ツール。結果の転記は手作業　検証部を持ち、結果を設計成果物へ戻す\n"
+            "変更追跡　担当者の記憶と個別メモ　HAZOP原因−SIF−素子の追跡表を出す\n"
+            "人の関与　切り方も確認も人に依存　例外と特殊インターロックだけ人が確認する\n"
+            "差の核：検証結果の設計への反映、入力項目と素子の対応の記録。差が弱い欄：自動生成、ルールベース。核にしない。\n"
+            "優位性：漏れに気づきやすい。レビューが追跡表でできる。変更時に影響範囲が見える。命名と切り方のぶれを知識ベースで抑えやすい。\n"
+            "使い方：この表を人が読んで、差の行の意味が同じになるか確認する。同じにならなければ、Step 2の構成の書き方を直してから表を更新する。"
+        ),
+    )
+
     add_step_slide(
         prs,
-        page="11",
+        page=pg(),
         step="4",
         title="クレーム案と発展例",
         goal="先行特許と被りにくい保護範囲の案がある",
@@ -449,13 +642,29 @@ def build_deck():
             "■ 独立項の核　HAZOP等の入力を取り込む手段と、SIFロジックを合成する手段と、合成結果を検証する手段と、検証結果を設計成果物へ反映する手段と、入力項目とロジック素子の対応を記録する手段、を備える。ポイントは『検証して戻す』と『対応を記録する』が落ちないこと。\n"
             "■ 従属の例　知識ベースを更新する、不合格時に再合成する、追跡表を出力する、人が例外を確認してから確定する、複数プラントへ展開する、P&IDタグと対応づける。\n"
             "■ 発展例　運転中のインターロック見直し、異常検知ロジックへの展開、規則の学習による知識ベース更新。\n"
-            "■ 派生テーマ（一行で残す）　検証結果の説明文生成、HAZOP支援ツールとの接続、変更差分だけの再検証。\n"
-            "これは骨格です。最終の文言は知財部と発明者で直してください。自動生成だけに見えたら、独立項を差の核に戻す。"
+            "■ 派生テーマ　検証結果の説明文生成、HAZOP支援ツールとの接続、変更差分だけの再検証。\n"
+            "次はPatentSQUAREで、この骨格が先行特許と衝突しないかを見る。衝突したらStep 2へ戻る。"
         ),
     )
+    add_polished_slide(
+        prs,
+        page=pg(),
+        step="4",
+        title="クレーム案",
+        body=(
+            "独立項の骨格（差の核だけ）：HAZOP等の危険シナリオを取り込む手段、知識ベースを参照してSIFロジックを合成する手段、合成結果を検証する手段、検証結果を設計成果物へ反映する手段、入力項目とロジック素子の対応を記録する手段、を備えるシステム。自動生成する手段、だけでは独立項にしない。\n"
+            "従属項：知識ベースを更新する／不合格時に再合成する／追跡表を出力する／人が例外を確認してから確定する／P&IDタグと対応づける／複数プラントへ展開する。\n"
+            "発展例：運転中のインターロック見直し。異常検知ロジックへの展開。規則の学習による知識ベース更新。\n"
+            "派生テーマ（一行）：検証結果の説明文生成。HAZOP支援ツールとの接続。変更差分だけの再検証。\n"
+            "まだやらないこと：この文言をANAQUAに登録すること。先に、Step 4と5の間で衝突確認をする。\n"
+            "次に進む条件：独立項を読んで、『自動生成だけ』に見えない。見えたら核を差の2点（戻す／記録する）に戻す。"
+        ),
+    )
+    add_conflict_slide(prs, pg())
+
     add_step_slide(
         prs,
-        page="12",
+        page=pg(),
         step="5",
         title="ANAQUAの項目へ落とす",
         goal="各項目が埋まり、課題・手段・効果・クレームが矛盾していない",
@@ -469,9 +678,69 @@ def build_deck():
         answer=(
             "並べて見ます。よくあるずれは『課題は漏れと属人化なのに、クレームが自動生成だけ』です。効果の『漏れ防止』が権利の核に残っていない、という状態です。\n"
             "■ 対応の確認　2.2の課題（転記・属人化・漏れ・変更が届かない）→ 3.3の構成（合成＋検証＋追跡）→ 3.4の効果（工数・漏れ・影響範囲）→ 5の独立項（検証して戻す、対応を記録する）。どれかが『自動生成』だけに戻っていたら、差の核が落ちています。\n"
-            "■ 用語　本文とクレームで『安全計装ロジック』と『SIF』を混在させない。初出で『SIF（安全計装機能）』と定義し、以降はSIFにそろえる。インターロックはSIFを実現するロジックの呼び方として書き、SIFと別物のように並列しない。C&E／FBDも初出で正式名を書く。\n"
-            "■ 仕上げ　公式フォーマットへ写したあと、課題の困りごとが手段・効果・クレームのどこかに矢印でつながるかだけ見る。つながらない行は削るか、構成側を厚くする。出力をそのまま登録しないでください。"
+            "■ 用語　本文とクレームで『安全計装ロジック』と『SIF』を混在させない。初出で『SIF（安全計装機能）』と定義し、以降はSIFにそろえる。インターロックはSIFを実現するロジックの呼び方として書く。\n"
+            "■ 仕上げ　公式フォーマットへ写したあと、課題の困りごとが手段・効果・クレームのどこかに矢印でつながるかだけ見る。つながらない行は削るか、構成側を厚くする。"
         ),
     )
-    add_drawing_slide(prs)
+    add_polished_slide(
+        prs,
+        page=pg(),
+        step="5",
+        title="章立てへ落とす",
+        body=(
+            "写す先（5枚目の章立て）：1 技術分野＝プラントSIS設計。2.1 従来の図＝手作業のC&E／FBD。2.2 従来の問題＝転記・属人化・漏れ・変更が届かない。3.1 目的＝合成と検証と追跡を一つの流れにする。3.2 本発明の図＝入力・知識・合成・検証・出力。3.3 具体的内容＝Step 2の仕上げ。3.4 効果＝工数・漏れ・影響範囲。4 発展例＝Step 4の発展。5 クレーム案＝衝突確認を通った独立項と従属項。\n"
+            "用語（そろえた定義）：SIF（安全計装機能）。初出で定義し、以降はSIF。インターロックはSIFを実現するロジック。C&Eは原因と結果の表。FBDはファンクションブロック図。SISは安全計装システム。\n"
+            "矛盾チェック結果（例）：課題の『漏れと変更が届かない』は、手段の検証部と追跡表、効果の漏れ低減と影響範囲、独立項の『戻す／記録する』に対応している。『自動生成』だけに戻っている行はない。\n"
+            "まだやらないこと：Copilotの出力をそのままANAQUAへ登録すること。人が説明できる文だけ残す。"
+        ),
+    )
+
+    add_graphviz_policy_slide(prs, pg())
+    add_graphviz_howto_slide(prs, pg())
+    add_graphviz_example_slide(
+        prs,
+        page=pg(),
+        title="図1　従来フロー",
+        subtitle="手作業のC&E／FBDと、別ツールのSIL検証",
+        prompt="『従来のSIS設計フローをGraphvizのDOTで書いて。HAZOP→手作業C&E→手作業FBD→別ツールSIL検証。社外サイトは使わず、この会話で図も出して。』",
+        nodes=["HAZOP", "手作業 C&E", "手作業 FBD", "別ツール\nSIL検証"],
+        note="見るところ：矢印がすべて『手作業／別ツール』になっているか。本発明の検証ループが混ざっていないか。",
+        box_w=Inches(2.20),
+        gap=Inches(0.38),
+    )
+    add_graphviz_example_slide(
+        prs,
+        page=pg(),
+        title="図2　本発明の構成",
+        subtitle="入力・知識・合成・検証・出力。人が見る点も残す",
+        prompt="『本発明の構成をGraphvizのDOTで書いて。入力部、知識ベース、合成エンジン、検証部、出力部、人が見る点。社外サイトは使わず、この会話で図も出して。』",
+        nodes=["入力部", "知識ベース", "合成エンジン", "検証部", "出力部"],
+        extra_nodes=("人が見る点は、検証のあとに残す。", ["例外シナリオ", "特殊\nインターロック", "不合格時の方針"]),
+        note="見るところ：6つの箱がそろっているか。人が見る点が消えて『全自動』になっていないか。",
+        box_w=Inches(2.20),
+        gap=Inches(0.38),
+    )
+    add_graphviz_example_slide(
+        prs,
+        page=pg(),
+        title="図3　処理の流れ",
+        subtitle="不合格なら合成に戻る。人が確認してから確定する",
+        prompt="『処理の流れをGraphvizのDOTで書いて。取り込み→SIF候補→合成→検証→出力。不合格なら合成に戻る。人が確認して確定。社外サイトは使わず、この会話で図も出して。』",
+        nodes=["取り込む", "SIF候補", "合成する", "検証する", "出力する"],
+        extra_nodes=("不合格のとき", ["検証する", "合成に戻る", "人が確認", "確定する"]),
+        note="見るところ：検証から合成へ戻る矢印があるか。人が確認する箱が抜けていないか。",
+        box_w=Inches(2.20),
+        gap=Inches(0.38),
+    )
+    add_graphviz_example_slide(
+        prs,
+        page=pg(),
+        title="図4　トレーサビリティの例",
+        subtitle="HAZOPの原因 − SIF − 素子、の対応が残ること",
+        prompt="『追跡の例をGraphvizのDOTで書いて。HAZOP原因→SIF→ロジック素子。変更が入ったら影響範囲が見えるように。社外サイトは使わず、この会話で図も出して。』",
+        nodes=["HAZOP原因", "SIF", "ロジック素子", "影響範囲"],
+        note="見るところ：3つが一本の線でつながっているか。変更から影響範囲へ矢印があるか。図が開示書3.3の文章と同じか。",
+        box_w=Inches(2.20),
+        gap=Inches(0.38),
+    )
     return prs
