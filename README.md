@@ -11,7 +11,7 @@
 | [decks/03_競合吸着モデル_20260803](decks/03_競合吸着モデル_20260803/) | 2026/08/03 廣森先生・北川先生向け発表原稿 |
 | [decks/04_反応一覧_VE貢献_v4](decks/04_反応一覧_VE貢献_v4/) | v4 反応一覧・定数・VE出口貢献 |
 | [decks/05_Copilot発明開示書](decks/05_Copilot発明開示書/) | Copilotで発明開示書を作る手順（訂正反映） |
-| [decks/06_Copilot使いこなし](decks/06_Copilot使いこなし/) | 開示書・特許文書・図で、チャットを混ぜずに頼むコツ |
+| [decks/06_Copilot使いこなし](decks/06_Copilot使いこなし/) | 一つの特許を作るときの、Copilotの頼み方 |
 
 新しい資料は `decks/_template/` をコピーし、`decks/NN_短い名前/` を作って README を書いてください。
 
