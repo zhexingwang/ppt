@@ -11,6 +11,7 @@
 | [decks/03_競合吸着モデル_20260803](decks/03_競合吸着モデル_20260803/) | 2026/08/03 廣森先生・北川先生向け発表原稿 |
 | [decks/04_反応一覧_VE貢献_v4](decks/04_反応一覧_VE貢献_v4/) | v4 反応一覧・定数・VE出口貢献 |
 | [decks/05_Copilot発明開示書](decks/05_Copilot発明開示書/) | Copilotで発明開示書を作る手順（訂正反映） |
+| [decks/06_Copilot使いこなし](decks/06_Copilot使いこなし/) | 開示書・特許文書・図で、チャットを混ぜずに頼むコツ |
 
 新しい資料は `decks/_template/` をコピーし、`decks/NN_短い名前/` を作って README を書いてください。
 
@@ -23,6 +24,8 @@ python3 -m pip install -r requirements.txt
 python3 generate_infographic.py          # → decks/01_…/sample_infographic.pptx
 python3 generate_self_intro.py           # → decks/02_…/self_intro.pptx
 python3 generate_ve_contribution.py      # → decks/04_…/反応一覧_定数_VE出口貢献_v4.pptx
+python3 generate_invention_disclosure.py # → decks/05_…/Copilot発明開示書_訂正反映.pptx
+python3 generate_copilot_techniques.py   # → decks/06_…/Copilot使いこなしのコツ.pptx
 ```
 
 JSON から生成する場合:
